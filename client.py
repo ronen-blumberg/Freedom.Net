@@ -34,7 +34,7 @@ import threading
 import time
 
 APP_NAME           = "Freedom Net"
-APP_VERSION        = "0.1.0"
+APP_VERSION        = "0.1.1"
 KDF_TAG            = b"FreedomNet-v1"
 
 MAX_NICK           = 32

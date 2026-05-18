@@ -63,7 +63,7 @@
 #endif
 
 #define APP_NAME           "Freedom Net"
-#define APP_VERSION        "0.1.0"
+#define APP_VERSION        "0.1.1"
 #define KDF_TAG            "FreedomNet-v1"
 #define KDF_TAG_LEN        13
 
@@ -662,8 +662,10 @@ static void random_nick_unlocked(char out[MAX_NICK]) {
 static void random_room_unlocked(char out[MAX_ROOM]) {
     int i, candidates[MAX_ROOMS], n = 0;
     uint8_t r[2];
+    /* Skip secret rooms (names beginning with '+') when picking a random one. */
     for (i = 0; i < MAX_ROOMS; i++) {
-        if (g_rooms[i].in_use && g_rooms[i].nmembers < MAX_USERS_PER_ROOM) {
+        if (g_rooms[i].in_use && g_rooms[i].nmembers < MAX_USERS_PER_ROOM
+            && g_rooms[i].name[0] != '+') {
             candidates[n++] = i;
         }
     }
@@ -1076,6 +1078,8 @@ static void handle_list(int cidx) {
     count_off = o++;
     for (i = 0; i < MAX_ROOMS && o + 1 + MAX_ROOM + 2 < sizeof(buf); i++) {
         if (!g_rooms[i].in_use) continue;
+        /* Secret rooms ('+'-prefixed) are hidden from listings. */
+        if (g_rooms[i].name[0] == '+') continue;
         size_t rl = strlen(g_rooms[i].name);
         buf[o++] = (uint8_t)rl;
         memcpy(buf + o, g_rooms[i].name, rl); o += rl;

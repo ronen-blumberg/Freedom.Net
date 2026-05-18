@@ -82,7 +82,7 @@
 #endif
 
 #define APP_NAME           "Freedom Net"
-#define APP_VERSION        "0.1.0"
+#define APP_VERSION        "0.1.1"
 #define KDF_TAG            "FreedomNet-v1"
 #define KDF_TAG_LEN        13
 

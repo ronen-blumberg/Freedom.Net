@@ -22,7 +22,7 @@ import threading
 import time
 
 APP_NAME           = "Freedom Net"
-APP_VERSION        = "0.1.0"
+APP_VERSION        = "0.1.1"
 KDF_TAG            = b"FreedomNet-v1"
 
 MAX_NICK           = 32
@@ -409,9 +409,9 @@ class Server:
         return n
 
     def _random_room(self):
-        # prefer joining an existing non-full room
+        # prefer joining an existing non-full, non-secret room
         avail = [name for name, m in self.rooms.items()
-                 if len(m) < MAX_USERS_PER_ROOM]
+                 if len(m) < MAX_USERS_PER_ROOM and not name.startswith("+")]
         if avail:
             return avail[int.from_bytes(os.urandom(2), "big") % len(avail)]
         return f"lobby_{int.from_bytes(os.urandom(2), 'big') % 1000}"
@@ -599,8 +599,11 @@ def handle_who(client, payload):
 
 
 def handle_list(client):
+    # Rooms whose names start with '+' are secret: omitted from listings,
+    # but still joinable by anyone who knows the exact name.
     with SERVER.lock:
-        items = [(name, len(m)) for name, m in SERVER.rooms.items()]
+        items = [(name, len(m)) for name, m in SERVER.rooms.items()
+                 if not name.startswith("+")]
     out = bytearray([len(items)])
     for name, nm in items:
         rb = name.encode("utf-8")

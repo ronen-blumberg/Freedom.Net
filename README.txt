@@ -1,5 +1,5 @@
 ================================================================================
-                          FREEDOM  NET   0.1.0
+                          FREEDOM  NET   0.1.1
         A test case in freedom. An unmoderated, anonymous, encrypted
         chat network in the spirit of the BBS and the early IRC days.
 ================================================================================
@@ -184,7 +184,8 @@ keyphrase can join.
     The /who command lists the users currently in a given room
     (default: the room you are in right now).
     The /list command lists every room currently in existence on the
-    server, with the user count for each.
+    server, with the user count for each. Secret rooms (see 3.13) are
+    omitted from this listing.
 
 3.11 Unmoderated by design
     There is no /kick. There is no /ban. There is no admin password.
@@ -202,7 +203,23 @@ keyphrase can join.
     log file rotates to the new name. The log is local to your machine
     and is never sent over the network.
 
-3.13 Cross-platform
+3.13 Secret rooms
+    A room whose name begins with "+" is a secret room. It does not
+    appear in /list, and the server will never auto-place a random
+    joiner into it. It has no other protection: anyone who knows the
+    exact name can /join it, and once inside they can /who it. Think
+    of it as a room with no signpost on the door, not a room with a
+    lock.
+
+    The first user to /join a "+" name creates the room; it is
+    destroyed when the last user leaves, same as any other room.
+    This is hiding-by-obscurity on purpose. It costs nothing, it
+    requires no protocol change, and it is enough for most "let's
+    keep this quiet" use cases. If you need real access control,
+    run your own server and pick a keyphrase only the invited
+    people know.
+
+3.14 Cross-platform
     The C client and server both build on Linux x86_64 and on
     Windows i686 from one source file each. The Python client and
     server run on any system with Python 3.7 or newer, no third-party
@@ -218,7 +235,10 @@ Type a line of text and press Enter to send it to your current room.
     /join <room>            Join a room. If you are already in that
                             room, switch your "current room" to it.
                             Plain-text lines you type get sent to
-                            your current room.
+                            your current room. Room names starting
+                            with "+" are secret rooms (see 3.13);
+                            they are hidden from /list but joinable
+                            by anyone who knows the exact name.
 
     /part [<room>]          Leave a room. If you do not name one, you
                             leave your current room.
@@ -240,7 +260,8 @@ Type a line of text and press Enter to send it to your current room.
     /who [<room>]           List users in a room. Defaults to current.
 
     /list                   List every room on the server with user
-                            counts, e.g.   main(7), lounge(3), foo(1)
+                            counts, e.g.   main(7), lounge(3), foo(1).
+                            Secret rooms ("+"-prefixed) are not shown.
 
     /quit                   Disconnect from the server.
 
@@ -460,5 +481,3 @@ remember why.
 ================================================================================
                           end of MANIFESTO.txt
 ================================================================================
-
-YouTube Demo: https://www.youtube.com/watch?v=lX91Lkn7Puc
