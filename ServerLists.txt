@@ -1,0 +1,2 @@
+Freedom.Net Server Lists
+Server #1: host: freedomnet.tech port 5190 keyphrase blade-runner-1982
