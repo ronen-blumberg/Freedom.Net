@@ -20,6 +20,8 @@ Commands at the prompt:
     /nick <newnick>       change your nickname
     /who  [<room>]        list users in a room
     /list                 list all rooms on the server
+    /ignore [<nick>]      hide messages/DMs/files from a user (no args: list)
+    /unignore <nick>      stop ignoring a user
     /quit                 disconnect
     /help                 show this list
     //text                send a literal chat line that starts with '/'
@@ -34,13 +36,14 @@ import threading
 import time
 
 APP_NAME           = "Freedom Net"
-APP_VERSION        = "0.1.1"
+APP_VERSION        = "0.1.2"
 KDF_TAG            = b"FreedomNet-v1"
 
 MAX_NICK           = 32
 MAX_ROOM           = 32
 MAX_TEXT           = 1024
 MAX_ROOMS_PER_USER = 10
+MAX_IGNORED        = 64
 
 AES_BLOCK          = 16
 AES_ROUNDS         = 14
@@ -390,6 +393,35 @@ g_rk = None
 g_rooms = []          # list of room names this user is in
 g_current_room = None
 g_state_lock = threading.Lock()
+g_ignored = set()     # nicknames whose messages/DMs/files we drop locally
+
+
+def is_ignored(nick):
+    with g_state_lock:
+        return nick in g_ignored
+
+
+def ignore_add(nick):
+    with g_state_lock:
+        if nick in g_ignored:
+            return "already"
+        if len(g_ignored) >= MAX_IGNORED:
+            return "full"
+        g_ignored.add(nick)
+        return "ok"
+
+
+def ignore_remove(nick):
+    with g_state_lock:
+        if nick not in g_ignored:
+            return False
+        g_ignored.remove(nick)
+        return True
+
+
+def ignore_list():
+    with g_state_lock:
+        return sorted(g_ignored)
 
 
 def send_packet_locked(ptype, payload=b""):
@@ -529,6 +561,8 @@ def on_pkt_msg(payload):
         sender, off = read_u8_string(payload, off)
     except ValueError:
         return
+    if is_ignored(sender):
+        return
     text = payload[off:].decode("utf-8", errors="replace")
     term_putline(f"[{room}] {sender}: {text}", LINE_CHAT)
 
@@ -538,6 +572,8 @@ def on_pkt_emote(payload):
         room, off = read_u8_string(payload, 0)
         sender, off = read_u8_string(payload, off)
     except ValueError:
+        return
+    if is_ignored(sender):
         return
     text = payload[off:].decode("utf-8", errors="replace")
     term_putline(f"[{room}] * {sender} {text} *", LINE_EMOTE)
@@ -562,6 +598,8 @@ def on_pkt_dm(payload):
         sender, off = read_u8_string(payload, 0)
     except ValueError:
         return
+    if is_ignored(sender):
+        return
     text = payload[off:].decode("utf-8", errors="replace")
     term_putline(f"[DM from {sender}] {text}", LINE_DM)
 
@@ -569,6 +607,8 @@ def on_pkt_dm(payload):
 def on_pkt_file(payload):
     try:
         sender, off = read_u8_string(payload, 0)
+        if is_ignored(sender):
+            return
         if off + 1 > len(payload): return
         fnl = payload[off]; off += 1
         if fnl == 0 or off + fnl + 4 > len(payload): return
@@ -755,6 +795,8 @@ HELP = [
     "  /nick <newnick>       change your nickname",
     "  /who [<room>]         list users in a room",
     "  /list                 list all rooms on the server",
+    "  /ignore [<nick>]      hide messages/DMs/files from a user (no args: list)",
+    "  /unignore <nick>      stop ignoring a user",
     "  /quit                 disconnect",
     "  //text                send a literal line that starts with '/'",
 ]
@@ -836,6 +878,36 @@ def handle_input(line):
                 term_putline("Usage: /send <nick> <absolute-path>"); return
             to, path = sub[0], sub[1].strip()
             send_file_to(to, path); return
+        if cmd == "/ignore":
+            nick = rest.strip()
+            if not nick:
+                lst = ignore_list()
+                if not lst:
+                    term_putline("No users ignored.")
+                else:
+                    term_putline(f"Ignoring ({len(lst)}): " + ", ".join(lst))
+                return
+            if not name_is_valid(nick, MAX_NICK):
+                term_putline("Invalid nickname."); return
+            if nick == g_nick:
+                term_putline("You cannot ignore yourself."); return
+            r = ignore_add(nick)
+            if r == "already":
+                term_putline(f"* already ignoring {nick} *")
+            elif r == "full":
+                term_putline(f"Ignore list is full (max {MAX_IGNORED}).")
+            else:
+                term_putline(f"* ignoring {nick} *")
+            return
+        if cmd == "/unignore":
+            nick = rest.strip()
+            if not nick:
+                term_putline("Usage: /unignore <nick>"); return
+            if ignore_remove(nick):
+                term_putline(f"* no longer ignoring {nick} *")
+            else:
+                term_putline(f"* {nick} was not ignored *")
+            return
         if cmd == "/connect":
             term_putline("Already connected; /quit first."); return
         term_putline(f"Unknown command: {cmd}  (try /help)")

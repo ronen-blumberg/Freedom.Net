@@ -1,5 +1,5 @@
 ================================================================================
-                          FREEDOM  NET   0.1.1
+                          FREEDOM  NET   0.1.2
         A test case in freedom. An unmoderated, anonymous, encrypted
         chat network in the spirit of the BBS and the early IRC days.
 ================================================================================
@@ -196,6 +196,12 @@ keyphrase can join.
     your client at a different one. The whole binary is small enough
     that running your own is realistic.
 
+    The one personal accommodation is /ignore (see 3.15): a strictly
+    client-side filter that hides another user's messages, DMs, and
+    files from your own terminal. Nothing is sent over the wire, the
+    ignored user is not told, and no one else's experience changes.
+    It is the equivalent of looking the other way, not of silencing.
+
 3.12 Per-user chat log
     On the client side, every event you see is also written to a
     plain-text log file in the current working directory, called
@@ -224,6 +230,40 @@ keyphrase can join.
     Windows i686 from one source file each. The Python client and
     server run on any system with Python 3.7 or newer, no third-party
     packages required.
+
+3.15 Personal ignore list
+    The /ignore command adds a nickname to a personal block list kept
+    in your client's memory. While a nickname is on that list, your
+    client silently drops every room message, every emote (/me), every
+    private message (/msg), and every file (/send) that arrives with
+    that nickname as sender. Nothing is written to your chat log for
+    those packets either.
+
+    /unignore removes a nickname from the list. /ignore with no
+    argument prints the current list.
+
+    Important properties:
+
+      - It is purely local. No packet is sent to the server. Other
+        users are not told. The server cannot tell. There is no
+        moderation effect on anyone but you.
+      - It is in-memory only. When you close the client the list
+        is gone. Like everything else in Freedom Net, the network
+        does not remember.
+      - Identity is just a nickname. If the user you ignored types
+        /nick and picks a new one, your filter no longer matches.
+        You will see them again under the new name and can /ignore
+        that one too. This is a direct consequence of section 3.2
+        (no accounts) and is honest about its limit.
+      - Join, part, and nick-change announcements from an ignored
+        user are still shown. Otherwise an ignored user could
+        rename themselves and you would not know it was them.
+      - Self-ignore is rejected. The list is capped at 64 entries
+        (more than enough at 200 users per server).
+      - Files from an ignored sender are dropped before being
+        written to disk. This is the security-relevant case: an
+        abusive user cannot drop files into your working directory
+        just by virtue of knowing the keyphrase.
 
 
 --------------------------------------------------------------------------------
@@ -262,6 +302,13 @@ Type a line of text and press Enter to send it to your current room.
     /list                   List every room on the server with user
                             counts, e.g.   main(7), lounge(3), foo(1).
                             Secret rooms ("+"-prefixed) are not shown.
+
+    /ignore [<nick>]        Hide room messages, emotes, DMs, and file
+                            transfers from <nick>. Purely local, never
+                            sent over the wire. With no argument,
+                            prints the current ignore list. See 3.15.
+
+    /unignore <nick>        Remove <nick> from your ignore list.
 
     /quit                   Disconnect from the server.
 

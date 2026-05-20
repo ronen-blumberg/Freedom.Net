@@ -82,7 +82,7 @@
 #endif
 
 #define APP_NAME           "Freedom Net"
-#define APP_VERSION        "0.1.1"
+#define APP_VERSION        "0.1.2"
 #define KDF_TAG            "FreedomNet-v1"
 #define KDF_TAG_LEN        13
 
@@ -90,6 +90,7 @@
 #define MAX_ROOM           32
 #define MAX_TEXT           1024
 #define MAX_ROOMS_PER_USER 10
+#define MAX_IGNORED        64
 
 #define AES_BLOCK          16
 #define AES_KEY_BYTES      32
@@ -731,6 +732,79 @@ static int get_current_room(char out[MAX_ROOM]) {
     return got;
 }
 
+/* ===== Client ignore list (purely local; never sent to the server) ===== */
+
+static char    g_ignored[MAX_IGNORED][MAX_NICK];
+static int     g_nignored = 0;
+static mutex_t g_ignore_lock;
+
+static int find_ignored_unlocked(const char *nick) {
+    int i;
+    for (i = 0; i < g_nignored; i++)
+        if (strcmp(g_ignored[i], nick) == 0) return i;
+    return -1;
+}
+
+static int is_ignored(const char *nick) {
+    int yes;
+    MUTEX_LOCK(g_ignore_lock);
+    yes = (find_ignored_unlocked(nick) >= 0);
+    MUTEX_UNLOCK(g_ignore_lock);
+    return yes;
+}
+
+/* Returns 0 ok, 1 already, 2 full. */
+static int ignore_add(const char *nick) {
+    int rc;
+    MUTEX_LOCK(g_ignore_lock);
+    if (find_ignored_unlocked(nick) >= 0)        rc = 1;
+    else if (g_nignored >= MAX_IGNORED)          rc = 2;
+    else {
+        strncpy(g_ignored[g_nignored], nick, MAX_NICK - 1);
+        g_ignored[g_nignored][MAX_NICK - 1] = 0;
+        g_nignored++;
+        rc = 0;
+    }
+    MUTEX_UNLOCK(g_ignore_lock);
+    return rc;
+}
+
+static int ignore_remove(const char *nick) {
+    int i, found = 0;
+    MUTEX_LOCK(g_ignore_lock);
+    i = find_ignored_unlocked(nick);
+    if (i >= 0) {
+        for (; i < g_nignored - 1; i++)
+            strcpy(g_ignored[i], g_ignored[i + 1]);
+        g_nignored--;
+        found = 1;
+    }
+    MUTEX_UNLOCK(g_ignore_lock);
+    return found;
+}
+
+/* Print current ignore list to terminal. */
+static void ignore_print_list(void) {
+    char line[2048];
+    size_t lo = 0;
+    int i, n;
+    MUTEX_LOCK(g_ignore_lock);
+    n = g_nignored;
+    if (n == 0) {
+        MUTEX_UNLOCK(g_ignore_lock);
+        term_putline("No users ignored.", LINE_SYSTEM);
+        return;
+    }
+    lo += (size_t)snprintf(line + lo, sizeof(line) - lo, "Ignoring (%d):", n);
+    for (i = 0; i < n; i++) {
+        lo += (size_t)snprintf(line + lo, sizeof(line) - lo, " %s%s",
+                               g_ignored[i], (i + 1 < n) ? "," : "");
+        if (lo >= sizeof(line) - 64) break;
+    }
+    MUTEX_UNLOCK(g_ignore_lock);
+    term_putline(line, LINE_SYSTEM);
+}
+
 /* ===== Encoders for client->server packets ===== */
 
 static int send_hello(const char *nick, const char *room) {
@@ -903,6 +977,7 @@ static void on_pkt_msg(const uint8_t *p, size_t plen) {
     size_t off = 0;
     if (read_u8_string(p, plen, &off, room,   sizeof(room))   != 0) return;
     if (read_u8_string(p, plen, &off, sender, sizeof(sender)) != 0) return;
+    if (is_ignored(sender)) return;
     {
         size_t tlen = plen - off;
         char  text[MAX_TEXT + 1];
@@ -917,6 +992,7 @@ static void on_pkt_emote(const uint8_t *p, size_t plen) {
     size_t off = 0;
     if (read_u8_string(p, plen, &off, room,   sizeof(room))   != 0) return;
     if (read_u8_string(p, plen, &off, sender, sizeof(sender)) != 0) return;
+    if (is_ignored(sender)) return;
     {
         size_t tlen = plen - off;
         char text[MAX_TEXT + 1];
@@ -950,6 +1026,7 @@ static void on_pkt_dm(const uint8_t *p, size_t plen) {
     char sender[MAX_NICK];
     size_t off = 0;
     if (read_u8_string(p, plen, &off, sender, sizeof(sender)) != 0) return;
+    if (is_ignored(sender)) return;
     {
         size_t tlen = plen - off;
         char text[MAX_TEXT + 1];
@@ -965,6 +1042,7 @@ static void on_pkt_file(const uint8_t *p, size_t plen) {
     uint8_t fnl;
     uint32_t fsz;
     if (read_u8_string(p, plen, &off, sender, sizeof(sender)) != 0) return;
+    if (is_ignored(sender)) return;
     if (off + 1 > plen) return;
     fnl = p[off++];
     if (fnl == 0) return;                         /* fnl < 256 < sizeof(fname) */
@@ -1212,6 +1290,8 @@ static void show_help(void) {
     term_putline("  /nick <newnick>       change your nickname", LINE_SYSTEM);
     term_putline("  /who [<room>]         list users in a room", LINE_SYSTEM);
     term_putline("  /list                 list all rooms on the server", LINE_SYSTEM);
+    term_putline("  /ignore [<nick>]      hide messages/DMs/files from a user (no args: list)", LINE_SYSTEM);
+    term_putline("  /unignore <nick>      stop ignoring a user", LINE_SYSTEM);
     term_putline("  /quit                 disconnect", LINE_SYSTEM);
     term_putline("  //text                send a literal line that starts with '/'", LINE_SYSTEM);
 }
@@ -1338,6 +1418,31 @@ static void handle_input(char *line) {
             send_file_to(to, path);
             return;
         }
+        if (strcmp(cmd, "/ignore") == 0) {
+            char *nick = trim(rest);
+            int r;
+            if (!*nick) { ignore_print_list(); return; }
+            if (!name_is_valid(nick, MAX_NICK)) {
+                term_putline("Invalid nickname.", LINE_SYSTEM); return;
+            }
+            if (strcmp(nick, g_nick) == 0) {
+                term_putline("You cannot ignore yourself.", LINE_SYSTEM); return;
+            }
+            r = ignore_add(nick);
+            if (r == 1)      term_putlinef(LINE_SYSTEM, "* already ignoring %s *", nick);
+            else if (r == 2) term_putlinef(LINE_SYSTEM, "Ignore list is full (max %d).", MAX_IGNORED);
+            else             term_putlinef(LINE_SYSTEM, "* ignoring %s *", nick);
+            return;
+        }
+        if (strcmp(cmd, "/unignore") == 0) {
+            char *nick = trim(rest);
+            if (!*nick) { term_putline("Usage: /unignore <nick>", LINE_SYSTEM); return; }
+            if (ignore_remove(nick))
+                term_putlinef(LINE_SYSTEM, "* no longer ignoring %s *", nick);
+            else
+                term_putlinef(LINE_SYSTEM, "* %s was not ignored *", nick);
+            return;
+        }
         if (strcmp(cmd, "/connect") == 0) {
             term_putline("Already connected; /quit first.", LINE_SYSTEM);
             return;
@@ -1400,6 +1505,7 @@ int main(int argc, char **argv) {
     term_init();
     MUTEX_INIT(g_send_lock);
     MUTEX_INIT(g_state_lock);
+    MUTEX_INIT(g_ignore_lock);
     g_nrooms = 0;
     g_current_room = -1;
 
