@@ -1,5 +1,5 @@
 ================================================================================
-                          FREEDOM  NET   0.1.2
+                       KOLHAAM-NETWORK   0.1.2
         A test case in freedom. An unmoderated, anonymous, encrypted
         chat network in the spirit of the BBS and the early IRC days.
 ================================================================================
@@ -9,7 +9,7 @@
 0. THE MANIFESTO
 --------------------------------------------------------------------------------
 
-Freedom Net is a test case in freedom.
+kolhaam-network is a test case in freedom.
 
 It is small. It is unfinished. It is on purpose unmoderated. It does not
 have a /kick command, it does not have a /ban command, it does not have a
@@ -78,22 +78,22 @@ worked was not that everyone was nice. The reason it worked was that the
 software did not pretend it could solve the problem of people, and so it
 did not try to.
 
-Freedom Net is built in that tradition.
+kolhaam-network is built in that tradition.
 
 
 --------------------------------------------------------------------------------
-2. WHAT FREEDOM NET IS
+2. WHAT KOLHAAM-NETWORK IS
 --------------------------------------------------------------------------------
 
-Freedom Net is a small, light, minimalistic text-only chat network. It
+kolhaam-network is a small, light, minimalistic text-only chat network. It
 consists of two programs:
 
-    fdn-server   the server. Runs on one machine, listens on one TCP
+    khn-server   the server. Runs on one machine, listens on one TCP
                  port, relays encrypted packets between connected users.
                  The server is a relay. It does not chat. It has no
                  nickname. It has no room of its own.
 
-    fdn-client   the client. Runs in a terminal or command prompt on
+    khn-client   the client. Runs in a terminal or command prompt on
                  every user's machine. Connects to the server. Lets the
                  user join rooms, send messages, send files, whisper to
                  another user, change nickname, leave.
@@ -119,7 +119,7 @@ keyphrase can join.
     All wire traffic is AES-256-CBC encrypted. A fresh random 16-byte
     initialisation vector is sent with every packet. The 256-bit key is
     derived from the shared keyphrase via 100,000 iterations of SHA-256
-    with the domain-separation tag "FreedomNet-v1". Without the
+    with the domain-separation tag "KolHaAmNet-v1". Without the
     keyphrase, no part of the conversation - text, nicknames, room
     names, file contents, who is talking to whom - is recoverable from
     the wire.
@@ -205,7 +205,7 @@ keyphrase can join.
 3.12 Per-user chat log
     On the client side, every event you see is also written to a
     plain-text log file in the current working directory, called
-    freedom-net-<nickname>.log, in append mode. When you /nick, the
+    kolhaam-net-<nickname>.log, in append mode. When you /nick, the
     log file rotates to the new name. The log is local to your machine
     and is never sent over the network.
 
@@ -248,7 +248,7 @@ keyphrase can join.
         users are not told. The server cannot tell. There is no
         moderation effect on anyone but you.
       - It is in-memory only. When you close the client the list
-        is gone. Like everything else in Freedom Net, the network
+        is gone. Like everything else in kolhaam-network, the network
         does not remember.
       - Identity is just a nickname. If the user you ignored types
         /nick and picks a new one, your filter no longer matches.
@@ -325,15 +325,15 @@ Type a line of text and press Enter to send it to your current room.
 
 5.1 C, Linux x86_64
 
-        gcc -O2 -Wall -Wextra -Wno-unused-parameter -o fdn-server server.c -lpthread
-        gcc -O2 -Wall -Wextra -Wno-unused-parameter -o fdn-client client.c -lpthread
+        gcc -O2 -Wall -Wextra -Wno-unused-parameter -o khn-server server.c -lpthread
+        gcc -O2 -Wall -Wextra -Wno-unused-parameter -o khn-client client.c -lpthread
 
     Requires: gcc and libpthread (standard on every modern distro).
 
 5.2 C, Windows i686 (cross-compiled from Linux)
 
-        i686-w64-mingw32-gcc -O2 -o fdn-server.exe server.c -lws2_32 -ladvapi32
-        i686-w64-mingw32-gcc -O2 -o fdn-client.exe client.c -lws2_32 -ladvapi32
+        i686-w64-mingw32-gcc -O2 -o khn-server.exe server.c -lws2_32 -ladvapi32
+        i686-w64-mingw32-gcc -O2 -o khn-client.exe client.c -lws2_32 -ladvapi32
 
     Requires: gcc-mingw-w64-i686. On Debian/Ubuntu:
         sudo apt install gcc-mingw-w64-i686
@@ -357,7 +357,7 @@ Type a line of text and press Enter to send it to your current room.
 The server takes two arguments: the TCP port to listen on, and the
 keyphrase that all clients will need.
 
-    ./fdn-server 6667 'midnight-in-the-garden'
+    ./khn-server 6667 'midnight-in-the-garden'
 
 or equivalently:
 
@@ -382,18 +382,18 @@ the socket close.
 The client takes the server address, the port, the keyphrase, and
 optionally a nickname and a room:
 
-    ./fdn-client <server> <port> <keyphrase> [<nickname>] [<room>]
+    ./khn-client <server> <port> <keyphrase> [<nickname>] [<room>]
 
 Examples:
 
     # Connect with everything specified.
-    ./fdn-client chat.example.com 6667 'midnight-in-the-garden' alice main
+    ./khn-client chat.example.com 6667 'midnight-in-the-garden' alice main
 
     # Connect and let the server pick a room for you.
-    ./fdn-client chat.example.com 6667 'midnight-in-the-garden' alice ""
+    ./khn-client chat.example.com 6667 'midnight-in-the-garden' alice ""
 
     # Connect anonymously - server picks both nickname and room.
-    ./fdn-client chat.example.com 6667 'midnight-in-the-garden' "" ""
+    ./khn-client chat.example.com 6667 'midnight-in-the-garden' "" ""
 
 Pass an empty string ("") for nickname or room to have the server pick
 a random one. Once connected, anything you type that does not start
@@ -438,7 +438,7 @@ Packet types are single ASCII letters:
     Q  QUIT         client-originated polite disconnect
 
 AES-256-CBC with PKCS#7 padding. The key is SHA-256 of the keyphrase
-concatenated with the tag "FreedomNet-v1", then SHA-256'd 100,000 times
+concatenated with the tag "KolHaAmNet-v1", then SHA-256'd 100,000 times
 with the keyphrase mixed back in. Any reimplementation that uses the
 same KDF and same packet layouts is interoperable.
 
@@ -466,13 +466,13 @@ What it does NOT protect:
     - Anyone who can read the client's chat log file on disk.
     - Side-channel information like packet timing, packet size,
       connection-uptime patterns. A determined observer can still tell
-      that you are using Freedom Net, when you are using it, and
+      that you are using kolhaam-network, when you are using it, and
       roughly how much traffic you are sending - they just can't read
       what you're saying.
     - Forward secrecy is not provided. If the keyphrase leaks tomorrow,
       a recorded session from today can be decrypted.
 
-Freedom Net is for casual privacy and casual anonymity in casual
+kolhaam-network is for casual privacy and casual anonymity in casual
 chat. It is not a secure-messenger replacement for Signal or for
 any threat model where the adversary is a nation-state. It is a way
 to talk to a small group of people without inviting the rest of the
@@ -503,7 +503,7 @@ them and rebuild.
 11. PHILOSOPHY, ONE MORE TIME
 --------------------------------------------------------------------------------
 
-The point of Freedom Net is not to be the best chat program. There are
+The point of kolhaam-network is not to be the best chat program. There are
 plenty of better chat programs. The point is to be a chat program that
 is small enough that one person can read all of its source code in an
 afternoon, that has no dependency on any company or service, that

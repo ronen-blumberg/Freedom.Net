@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Freedom Net Client - terminal IM client for the Freedom Net server.
+kolhaam-network Client - terminal IM client for the kolhaam-network server.
 
 Pure-Python, no third-party dependencies. Wire-compatible with client.c:
 same packet format, same KDF, same AES. A Python client can join a C
@@ -35,9 +35,9 @@ import sys
 import threading
 import time
 
-APP_NAME           = "Freedom Net"
+APP_NAME           = "kolhaam-network"
 APP_VERSION        = "0.1.2"
-KDF_TAG            = b"FreedomNet-v1"
+KDF_TAG            = b"KolHaAmNet-v1"
 
 MAX_NICK           = 32
 MAX_ROOM           = 32
@@ -360,7 +360,7 @@ def term_putline(text, kind=LINE_SYSTEM):
 def log_open(nick):
     global _log_file
     safe = "".join(c if (c.isprintable() and c not in "/\\:") else "_" for c in nick) or "anon"
-    fn = f"freedom-net-{safe}.log"
+    fn = f"kolhaam-net-{safe}.log"
     if _log_file is not None:
         try: _log_file.close()
         except Exception: pass

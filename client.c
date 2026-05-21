@@ -1,12 +1,12 @@
 /*
- * Freedom Net Client - terminal IM client for the Freedom Net server.
+ * kolhaam-network Client - terminal IM client for the kolhaam-network server.
  *
  * Build:
- *   Linux x86_64 : gcc -O2 -Wall -Wextra -o fdn-client client.c -lpthread
- *   Windows i686 : i686-w64-mingw32-gcc -O2 -o fdn-client.exe client.c -lws2_32 -ladvapi32
+ *   Linux x86_64 : gcc -O2 -Wall -Wextra -o khn-client client.c -lpthread
+ *   Windows i686 : i686-w64-mingw32-gcc -O2 -o khn-client.exe client.c -lws2_32 -ladvapi32
  *
  * Usage (all but <server> <port> <keyphrase> are optional):
- *   ./fdn-client <server> <port> <keyphrase> [<nickname>] [<room>]
+ *   ./khn-client <server> <port> <keyphrase> [<nickname>] [<room>]
  *
  * Pass an empty string for nickname or room ("") to let the server pick one
  * randomly.
@@ -81,9 +81,9 @@
   #define PATH_SEP '/'
 #endif
 
-#define APP_NAME           "Freedom Net"
+#define APP_NAME           "kolhaam-network"
 #define APP_VERSION        "0.1.2"
-#define KDF_TAG            "FreedomNet-v1"
+#define KDF_TAG            "KolHaAmNet-v1"
 #define KDF_TAG_LEN        13
 
 #define MAX_NICK           32
@@ -542,7 +542,7 @@ static void log_open(const char *nick) {
     }
     safe[n] = 0;
     if (n == 0) snprintf(safe, sizeof(safe), "anon");
-    snprintf(fn, sizeof(fn), "freedom-net-%s.log", safe);
+    snprintf(fn, sizeof(fn), "kolhaam-net-%s.log", safe);
     if (g_log) { fclose(g_log); g_log = NULL; }
     g_log = fopen(fn, "ab");
     if (!g_log) {

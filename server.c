@@ -1,12 +1,12 @@
 /*
- * Freedom Net Server - End-to-end encrypted IRC-style chat server.
+ * kolhaam-network Server - End-to-end encrypted IRC-style chat server.
  *
  * Build:
- *   Linux x86_64 : gcc -O2 -Wall -Wextra -o fdn-server server.c -lpthread
- *   Windows i686 : i686-w64-mingw32-gcc -O2 -o fdn-server.exe server.c -lws2_32 -ladvapi32
+ *   Linux x86_64 : gcc -O2 -Wall -Wextra -o khn-server server.c -lpthread
+ *   Windows i686 : i686-w64-mingw32-gcc -O2 -o khn-server.exe server.c -lws2_32 -ladvapi32
  *
  * Usage:
- *   ./fdn-server <port> <keyphrase>
+ *   ./khn-server <port> <keyphrase>
  *
  * The server is a pure relay. All wire traffic is AES-256-CBC encrypted with
  * a key derived from <keyphrase> via 100k iterations of SHA-256.
@@ -62,9 +62,9 @@
   #define SEND_FLAGS MSG_NOSIGNAL
 #endif
 
-#define APP_NAME           "Freedom Net"
+#define APP_NAME           "kolhaam-network"
 #define APP_VERSION        "0.1.1"
-#define KDF_TAG            "FreedomNet-v1"
+#define KDF_TAG            "KolHaAmNet-v1"
 #define KDF_TAG_LEN        13
 
 #define MAX_NICK           32

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Freedom Net Server - end-to-end encrypted IRC-style chat server.
+kolhaam-network Server - end-to-end encrypted IRC-style chat server.
 
 Pure-Python, no third-party dependencies. Wire-compatible with server.c:
-the same packet format, same KDF (SHA-256 100k iters with "FreedomNet-v1"),
+the same packet format, same KDF (SHA-256 100k iters with "KolHaAmNet-v1"),
 same AES-256-CBC framing. A Python server accepts C clients and vice versa.
 
 Usage:
@@ -21,9 +21,9 @@ import sys
 import threading
 import time
 
-APP_NAME           = "Freedom Net"
+APP_NAME           = "kolhaam-network"
 APP_VERSION        = "0.1.1"
-KDF_TAG            = b"FreedomNet-v1"
+KDF_TAG            = b"KolHaAmNet-v1"
 
 MAX_NICK           = 32
 MAX_ROOM           = 32
