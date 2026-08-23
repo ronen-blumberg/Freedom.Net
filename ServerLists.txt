@@ -1,2 +1,3 @@
 Freedom.Net Server Lists
 Server #1: host: freedomnet.tech port 5190 keyphrase blade-runner-1982
+Tor onion adress: byintu5m62e7zj2itbigbmgxudsmxbxpdxvsbtbj6qzyd5l4cwjduhqd.onion
